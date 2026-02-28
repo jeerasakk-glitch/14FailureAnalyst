@@ -5,7 +5,7 @@
 =========================
 ISO 14224 Failure Analysis — Streamlit App (Optimized with CoT & Enhanced RAG)
 ระบบวิเคราะห์ Failure ตามมาตรฐาน ISO 14224:2016
-Version: 3.0 - Fixed Session State Issues
+Version: 4.0 - Fixed for Render.com Deployment
 """
 import streamlit as st
 import pandas as pd
@@ -523,7 +523,7 @@ def render_analysis():
         if st.button("← กลับ"):
             st.session_state.page = "home"
             st.rerun()
-            
+        
         if st.button("🔄 Reset Session"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
@@ -532,11 +532,12 @@ def render_analysis():
     with col_title:
         st.markdown("## 🔬 Failure Analysis — ISO 14224")
     
+    # Sidebar ✅ แก้ไข Indentation แล้ว
     with st.sidebar:
         st.markdown("### ⚙️ LLM Configuration")
         provider = st.selectbox("AI Provider", ["Claude (Anthropic)", "Gemini (Google)", "DeepSeek"])
-    
-        # ดึงจาก Environment Variables
+        
+        # ดึงจาก Environment Variables (สำหรับ Render.com)
         if provider == "Claude (Anthropic)":
             default_key = os.environ.get("ANTHROPIC_API_KEY", "")
             api_key = st.text_input("Anthropic API Key", value=default_key, type="password")
@@ -547,18 +548,18 @@ def render_analysis():
             default_key = os.environ.get("DEEPSEEK_API_KEY", "")
             api_key = st.text_input("DeepSeek API Key", value=default_key, type="password")
         
-    # Test Connection Button
-    if api_key and st.button("🧪 ทดสอบการเชื่อมต่อ API"):
-        with st.spinner("กำลังทดสอบ..."):
-            test_result = call_llm(
-                "You are a helpful assistant.",
-                "Say 'OK' if you can read this.",
-                provider, api_key, max_tokens=10
-            )
-            if test_result and not test_result.startswith("❌"):
-                st.success(f"✅ API ทำงานปกติ: {test_result}")
-            else:
-                st.error(f"❌ API Error: {test_result}")
+        # Test Connection Button
+        if api_key and st.button("🧪 ทดสอบการเชื่อมต่อ API"):
+            with st.spinner("กำลังทดสอบ..."):
+                test_result = call_llm(
+                    "You are a helpful assistant.",
+                    "Say 'OK' if you can read this.",
+                    provider, api_key, max_tokens=10
+                )
+                if test_result and not test_result.startswith("❌"):
+                    st.success(f"✅ API ทำงานปกติ: {test_result}")
+                else:
+                    st.error(f"❌ API Error: {test_result}")
     
     # Initialize
     collection = init_vdb()
@@ -690,7 +691,7 @@ def render_analysis():
     st.divider()
     
     # SECTION 5-7
-    st.markdown("### ⑤⑥⑦ Failure Analysis (CoT Enabled)")
+    st.markdown("### ⑤⑦ Failure Analysis (CoT Enabled)")
     
     final_mi = mi_input or st.session_state.get("suggested_mi", "")
     ready = (st.session_state.get("normalized_text", "") and 
