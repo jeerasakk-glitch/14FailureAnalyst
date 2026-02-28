@@ -103,7 +103,7 @@ EQUIPMENT_CLASSES = {
 # ============================================================
 # DATA LOADING (cached)
 # ============================================================
-@st.cache_data
+@st.cache_data              # ✅ มีอยู่แล้วที่นี่
 def load_plant_unit():
     try:
         df = pd.read_excel(CONFIG["plant_unit_xlsx"])
@@ -113,17 +113,32 @@ def load_plant_unit():
         st.error(f"❌ ไม่พบไฟล์ Plant_Unit.xlsx: {e}")
         return pd.DataFrame(columns=["Plant", "Unit", "Machinetype"])
 
-@st.cache_resource          # ✅ มีอยู่แล้วที่นี่
+@st.cache_resource
 def init_vdb():
     try:
         import chromadb
         from chromadb.utils import embedding_functions
+        
         ef = embedding_functions.DefaultEmbeddingFunction()
         client = chromadb.PersistentClient(path=CONFIG["chroma_path"])
-        collection = client.get_collection(
-            name=CONFIG["collection_name"],
-            embedding_function=ef,
-        )
+        
+        # ✅ เพิ่มส่วนนี้: เช็คว่า collection มีหรือยัง
+        collections = client.list_collections()
+        collection_names = [col.name for col in collections]
+        
+        if CONFIG["collection_name"] not in collection_names:
+            st.warning(f"⚠️ Collection '{CONFIG['collection_name']}' ไม่มี กำลังสร้างใหม่...")
+            collection = client.create_collection(
+                name=CONFIG["collection_name"],
+                embedding_function=ef,
+            )
+            st.success(f"✅ สร้าง collection เรียบร้อย")
+        else:
+            collection = client.get_collection(
+                name=CONFIG["collection_name"],
+                embedding_function=ef,
+            )
+        
         return collection
     except Exception as e:
         st.error(f"❌ VDB Error: {e}")
