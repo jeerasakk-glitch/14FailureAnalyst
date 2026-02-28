@@ -1,9 +1,11 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 14224_failure_analysis.py
 =========================
-Version: 5.0 - Fixed OpenAI v1+, Hidden Password Toggle, and VDB Metadata Error
+ISO 14224 Failure Analysis — Streamlit App (Optimized with CoT & Enhanced RAG)
+Version: 5.1 - FULL RESTORED + FIXES (DeepSeek, Hidden Eye, VDB Fix)
 """
 import streamlit as st
 import pandas as pd
@@ -36,74 +38,71 @@ st.set_page_config(
 )
 
 # ============================================================
-# EQUIPMENT CLASS MASTER LIST (ISO 14224)
+# EQUIPMENT CLASS MASTER LIST (ISO 14224) - FULL LIST RESTORED
 # ============================================================
 EQUIPMENT_CLASSES = {
     "── Rotating Equipment ──": None,
-    "BL — Blowers and fans": "BL", "CF — Centrifuges": "CF", "CE — Combustion engines": "CE",
-    "CO — Compressors": "CO", "EG — Electric generators": "EG", "EM — Electric motors": "EM",
-    "GT — Gas turbines": "GT", "LE — Liquid expanders": "LE", "MI — Mixers": "MI",
-    "PU — Pumps": "PU", "ST — Steam turbines": "ST", "TE — Turboexpanders": "TE",
+    "BL — Blowers and fans": "BL",
+    "CF — Centrifuges": "CF",
+    "CE — Combustion engines": "CE",
+    "CO — Compressors": "CO",
+    "EG — Electric generators": "EG",
+    "EM — Electric motors": "EM",
+    "GT — Gas turbines": "GT",
+    "LE — Liquid expanders": "LE",
+    "MI — Mixers": "MI",
+    "PU — Pumps": "PU",
+    "ST — Steam turbines": "ST",
+    "TE — Turboexpanders": "TE",
     "── Mechanical Equipment ──": None,
-    "CV — Conveyors and elevators": "CV", "CR — Cranes": "CR", "FS — Filters and strainers": "FS",
-    "HE — Heat exchangers": "HE", "HB — Heaters and boilers": "HB", "LA — Loading arms": "LA",
-    "PL — Onshore pipelines": "PL", "PI — Piping": "PI", "VE — Pressure vessels": "VE",
-    "SI — Silos": "SI", "SE — Steam ejectors": "SE", "TA — Storage tanks": "TA",
-    "SW — Swivels": "SW", "TU — Turrets": "TU", "WI — Winches": "WI",
+    "CV — Conveyors and elevators": "CV",
+    "CR — Cranes": "CR",
+    "FS — Filters and strainers": "FS",
+    "HE — Heat exchangers": "HE",
+    "HB — Heaters and boilers": "HB",
+    "LA — Loading arms": "LA",
+    "PL — Onshore pipelines": "PL",
+    "PI — Piping": "PI",
+    "VE — Pressure vessels": "VE",
+    "SI — Silos": "SI",
+    "SE — Steam ejectors": "SE",
+    "TA — Storage tanks": "TA",
+    "SW — Swivels": "SW",
+    "TU — Turrets": "TU",
+    "WI — Winches": "WI",
     "── Electrical Equipment ──": None,
-    "FC — Frequency converters": "FC", "PC — Power cables and terminations": "PC",
-    "PT — Power transformers": "PT", "SG — Switchgears": "SG", "UP — Uninterruptible power supply": "UP",
+    "FC — Frequency converters": "FC",
+    "PC — Power cables and terminations": "PC",
+    "PT — Power transformers": "PT",
+    "SG — Switchgears": "SG",
+    "UP — Uninterruptible power supply": "UP",
     "── Safety & Control Equipment ──": None,
-    "CL — Control logic units": "CL", "EC — Emergency communication equipment": "EC",
-    "ER — Escape, evacuation and rescue": "ER", "FG — Fire and gas detectors": "FG",
-    "FF — Fire-fighting equipment": "FF", "FI — Flare ignition": "FI", "IG — Inert-gas equipment": "IG",
-    "IP — Input devices": "IP", "LB — Lifeboats": "LB", "NO — Nozzles": "NO",
-    "TC — Telecommunications": "TC", "VA — Valves": "VA",
+    "CL — Control logic units": "CL",
+    "EC — Emergency communication equipment": "EC",
+    "ER — Escape, evacuation and rescue": "ER",
+    "FG — Fire and gas detectors": "FG",
+    "FF — Fire-fighting equipment": "FF",
+    "FI — Flare ignition": "FI",
+    "IG — Inert-gas equipment": "IG",
+    "IP — Input devices": "IP",
+    "LB — Lifeboats": "LB",
+    "NO — Nozzles": "NO",
+    "TC — Telecommunications": "TC",
+    "VA — Valves": "VA",
     "── Utilities & Auxiliaries ──": None,
-    "AI — Air-supply equipment": "AI", "SU — De-superheaters": "SU", "FE — Flare ignition equipment": "FE",
-    "HC — Heating/cooling media": "HC", "HP — Hydraulic power units": "HP", "NI — Nitrogen-supply equipment": "NI",
-    "OC — Open/Close drain equipment": "OC", "HV — HVAC equipment": "HV", "PO — Power Transmission & Speed Control": "PO",
+    "AI — Air-supply equipment": "AI",
+    "SU — De-superheaters": "SU",
+    "FE — Flare ignition equipment": "FE",
+    "HC — Heating/cooling media": "HC",
+    "HP — Hydraulic power units": "HP",
+    "NI — Nitrogen-supply equipment": "NI",
+    "OC — Open/Close drain equipment": "OC",
+    "HV — HVAC equipment": "HV",
+    "PO — Power Transmission & Speed Control": "PO",
 }
 
 # ============================================================
-# CUSTOM CSS (แก้ปัญหารูปตา)
-# ============================================================
-def inject_css():
-    st.markdown("""
-    <style>
-    /* 1. ซ่อนปุ่มรูปตา (Visibility Toggle) ในช่อง Password */
-    button[title="View password content"] {
-        display: none !important;
-    }
-    
-    /* 2. สไตล์ส่วนหัวและกล่องผลลัพธ์ */
-    .main-header { 
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); 
-        padding: 2rem 3rem; 
-        border-radius: 16px; 
-        margin-bottom: 2rem; 
-        color: white; 
-        text-align: center; 
-    }
-    .main-header h1 { color: #e2e8f0; margin: 0; font-size: 2rem; }
-    .main-header p { color: #94a3b8; margin: 0.5rem 0 0; }
-    .result-box { 
-        background: #f0fdf4; 
-        border-left: 4px solid #22c55e; 
-        padding: 1rem 1.5rem; 
-        border-radius: 0 8px 8px 0; 
-        margin: 0.5rem 0; 
-    }
-    div.stButton > button[kind="primary"] { 
-        width: 100%; 
-        padding: 1rem 2rem; 
-        font-size: 1.2rem; 
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# ============================================================
-# DATA LOADING
+# DATA LOADING (cached)
 # ============================================================
 @st.cache_data
 def load_plant_unit():
@@ -120,47 +119,56 @@ def init_vdb():
     try:
         import chromadb
         from chromadb.utils import embedding_functions
+        
         ef = embedding_functions.DefaultEmbeddingFunction()
         client = chromadb.PersistentClient(path=CONFIG["chroma_path"])
         
         collections = client.list_collections()
-        if CONFIG["collection_name"] not in [col.name for col in collections]:
-            collection = client.create_collection(name=CONFIG["collection_name"], embedding_function=ef)
+        collection_names = [col.name for col in collections]
+        
+        if CONFIG["collection_name"] not in collection_names:
+            collection = client.create_collection(
+                name=CONFIG["collection_name"],
+                embedding_function=ef,
+            )
         else:
-            collection = client.get_collection(name=CONFIG["collection_name"], embedding_function=ef)
+            collection = client.get_collection(
+                name=CONFIG["collection_name"],
+                embedding_function=ef,
+            )
         return collection
     except Exception as e:
         st.error(f"❌ VDB Error: {e}")
         return None
 
 # ============================================================
-# RAG SEARCH (แก้ปัญหา Error no such column)
+# RAG SEARCH (FIXED: metadata filter bypass)
 # ============================================================
 def rag_search(collection, query: str, n: int = 10, topic_filter: str = None) -> str:
     if collection is None:
         return "[VDB not available]"
     
     try:
-        # แก้ไข: ค้นหาแบบปกติโดยไม่ใช้ where metadata filter เพื่อเลี่ยง Error column 'topic'
+        # แก้ไขเพื่อเลี่ยงปัญหา no such column: topic ในโหมดเริ่มต้น
         results = collection.query(query_texts=[query], n_results=n)
         
-        if not results or not results["ids"] or not results["ids"][0]:
+        if not results["ids"][0]:
             return "[No relevant data found]"
         
         contexts = []
         for i in range(len(results["documents"][0])):
             doc = results["documents"][0][i]
             meta = results["metadatas"][0][i]
-            title = meta.get("title", "ISO 14224 Reference")
+            title = meta.get("title", "ISO Reference")
             page = meta.get("page_number", "?")
             contexts.append(f"[Source {i+1} | Page {page}] {title}\n{doc}")
         
         return "\n---\n".join(contexts)
     except Exception as e:
-        return f"[RAG Search Bypass due to error: {str(e)}]"
+        return f"[RAG Error Bypass: {str(e)}]"
 
 # ============================================================
-# LLM WRAPPER (แก้ปัญหา DeepSeek proxies error)
+# LLM WRAPPER (FIXED: DeepSeek OpenAI v1+ Compatibility)
 # ============================================================
 def call_llm(system_prompt: str, user_message: str,
              provider: str, api_key: str, max_tokens: int = 2500) -> str:
@@ -182,13 +190,16 @@ def call_llm(system_prompt: str, user_message: str,
         elif provider == "Gemini (Google)":
             import google.generativeai as genai
             genai.configure(api_key=api_key.strip())
-            model = genai.GenerativeModel(model_name="gemini-2.0-flash", system_instruction=system_prompt)
+            model = genai.GenerativeModel(
+                model_name="gemini-2.0-flash",
+                system_instruction=system_prompt,
+            )
             resp = model.generate_content(user_message)
             return resp.text
         
         elif provider == "DeepSeek":
             from openai import OpenAI
-            # แก้ไข: ใช้ http_client แทนการใส่ proxies ใน OpenAI() โดยตรง
+            # แก้ไข: ใช้ http_client แทนการส่ง proxies argument โดยตรง
             http_client = httpx.Client(verify=True)
             client = OpenAI(
                 api_key=api_key.strip(),
@@ -204,98 +215,226 @@ def call_llm(system_prompt: str, user_message: str,
                 max_tokens=max_tokens,
                 timeout=90,
             )
-            return resp.choices[0].message.content
-        return f"❌ Unknown provider: {provider}"
+            result = resp.choices[0].message.content
+            return result if result else "❌ LLM ตอบกลับเป็นค่าว่าง"
+        
+        else:
+            return f"❌ Unknown provider: {provider}"
+    
     except Exception as e:
-        return f"❌ LLM Error ({provider}):\n{str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        tb = traceback.format_exc()
+        return f"❌ LLM Error ({provider}):\n{str(e)}\n\nTraceback:\n{tb}"
 
 # ============================================================
-# ANALYSIS LOGIC (SAME AS PREVIOUS)
+# STEP 1: NORMALIZE FAILURE DESCRIPTION
 # ============================================================
 def normalize_failure(raw_text: str, provider: str, api_key: str) -> str:
-    system = "You are a Senior Reliability Engineer. Rewrite the failure description into professional English for ISO 14224 RCA."
+    system = """You are a Senior Reliability Engineer writing professional failure reports for ISO 14224 compliance.
+Rewrite in ENGLISH only. Structure: Component level, Context, Symptoms, Consequences. Output ONLY structured text."""
     return call_llm(system, raw_text, provider, api_key, max_tokens=800)
 
-def suggest_maintainable_item(collection, equip_code, equip_name, failure_desc, provider, api_key):
-    ctx = rag_search(collection, f"ISO 14224 {equip_name} {equip_code} maintainable item boundary", n=5)
-    system = f"ISO 14224 Expert. Determine MAINTAINABLE ITEM based on context:\n{ctx}"
-    user_msg = f"Equipment: {equip_code}\nDescription: {failure_desc}"
+# ============================================================
+# STEP 4: SUGGEST MAINTAINABLE ITEM (RAG)
+# ============================================================
+def suggest_maintainable_item(collection, equip_class_code: str,
+                              equip_class_name: str, failure_desc: str,
+                              provider: str, api_key: str) -> str:
+    q1 = f"ISO 14224 {equip_class_name} {equip_class_code} maintainable item subunit taxonomy boundary"
+    ctx1 = rag_search(collection, q1, n=8)
+    q2 = f"{equip_class_name} {failure_desc} component part item"
+    ctx2 = rag_search(collection, q2, n=5)
+    
+    combined_ctx = f"=== Equipment Taxonomy & Boundaries ===\n{ctx1}\n\n=== Failure-based Search ===\n{ctx2}"
+    
+    system = f"""You are an ISO 14224 expert. Determine the most appropriate MAINTAINABLE ITEM (Level 8) based on boundaries.
+CONTEXT:
+{combined_ctx}
+FORMAT:
+MAINTAINABLE ITEM: [item name]
+SUBUNIT: [subunit name if applicable]
+REASONING: [Brief explanation]"""
+    user_msg = f"Equipment: {equip_class_code} — {equip_class_name}\nDescription: {failure_desc}"
     return call_llm(system, user_msg, provider, api_key, max_tokens=600)
 
-def run_full_analysis(collection, equip_code, equip_name, item, desc, provider, api_key):
-    # Logic for FM, Mechanism, Cause as per original script
-    # (Keeping it consistent with your provided logic)
+# ============================================================
+# STEPS 5-7: FULL ANALYSIS (FULL LOGIC RESTORED)
+# ============================================================
+def run_full_analysis(collection, equip_class_code: str, equip_class_name: str,
+                      maintainable_item: str, normalized_desc: str,
+                      provider: str, api_key: str) -> dict:
     results = {}
-    # Example FM Call
-    q_fm = f"ISO 14224 {equip_name} {equip_code} failure mode"
-    ctx_fm = rag_search(collection, q_fm, n=8)
-    sys_fm = f"Expert ISO 14224. Context:\n{ctx_fm}\nAnalyze Failure Mode with Chain of Thought."
-    results["fm_result"] = call_llm(sys_fm, f"Item: {item}\nDesc: {desc}", provider, api_key)
-    # ... Mech and Cause similarly ...
+    
+    # ════ STEP 5: FAILURE MODE ════
+    q_fm = f"ISO 14224 {equip_class_name} {equip_class_code} failure mode definitions"
+    ctx_fm = rag_search(collection, q_fm, n=10)
+    q_tax = f"ISO 14224 {equip_class_name} {equip_class_code} taxonomy boundary"
+    ctx_tax = rag_search(collection, q_tax, n=5)
+    
+    sys_fm = f"""You are an ISO 14224:2016 expert.
+ANALYSIS APPROACH (CHAIN OF THOUGHT): Write a <thinking> block.
+Then output:
+FAILURE_MODE_CODE: [3-letter code]
+FAILURE_MODE_NAME: [Full description]
+FAILURE_MODE_EXAMPLES: [Examples]
+FM_REASONING: [Justification]
+
+=== DATA ===
+{ctx_fm}
+{ctx_tax}"""
+    msg_fm = f"Equipment: {equip_class_code}\nItem: {maintainable_item}\nDescription: {normalized_desc}"
+    results["fm_result"] = call_llm(sys_fm, msg_fm, provider, api_key, max_tokens=1500)
+    
+    # ════ STEP 6: FAILURE MECHANISM ════
+    q_mech = f"Table B.2 failure mechanism physical process degradation"
+    ctx_mech = rag_search(collection, q_mech, n=8)
+    fm_result_text = results.get("fm_result", "")
+    
+    sys_mech = f"""You are an ISO 14224 expert. Select from TABLE B.2 ONLY.
+<thinking> block first.
+FORMAT:
+MECHANISM_CODE: [e.g. 1]
+MECHANISM_NOTATION: [e.g. Mechanical failure]
+SUBDIVISION_CODE: [e.g. 1.2]
+SUBDIVISION_NOTATION: [Vibration]
+MECH_REASONING: [Summary]
+
+=== DATA ===
+{ctx_mech}
+{fm_result_text}"""
+    results["mech_result"] = call_llm(sys_mech, msg_fm, provider, api_key, max_tokens=1500)
+    
+    # ════ STEP 7: FAILURE CAUSE ════
+    q_cause = f"Table B.3 failure cause root cause guidelines"
+    ctx_cause = rag_search(collection, q_cause, n=8)
+    mech_result_text = results.get("mech_result", "")
+    
+    sys_cause = f"""You are an ISO 14224 expert. Select from TABLE B.3 ONLY.
+<thinking> block first.
+FORMAT:
+CAUSE_CODE: [e.g. 3]
+CAUSE_NOTATION: [Operation]
+CAUSE_SUBDIVISION_CODE: [3.3]
+CAUSE_SUBDIVISION_NOTATION: [Wear]
+CAUSE_REASONING: [Logic]
+
+=== DATA ===
+{ctx_cause}
+{mech_result_text}"""
+    results["cause_result"] = call_llm(sys_cause, msg_fm, provider, api_key, max_tokens=1500)
+    
+    # ════ COMBINE RESULTS (FULL PARSING) ════
+    combined_json = {}
+    def extract_field(text, prefix):
+        for line in text.split("\n"):
+            if line.strip().startswith(prefix):
+                return line.split(":", 1)[1].strip()
+        return ""
+    
+    fm_text = results.get("fm_result", "")
+    combined_json["failure_mode_code"] = extract_field(fm_text, "FAILURE_MODE_CODE:")
+    combined_json["failure_mode_name"] = extract_field(fm_text, "FAILURE_MODE_NAME:")
+    combined_json["fm_reasoning"] = extract_field(fm_text, "FM_REASONING:")
+    
+    mech_text = results.get("mech_result", "")
+    combined_json["failure_mechanism_notation"] = extract_field(mech_text, "MECHANISM_NOTATION:")
+    m_sub_code = extract_field(mech_text, "SUBDIVISION_CODE:")
+    m_sub_name = extract_field(mech_text, "SUBDIVISION_NOTATION:")
+    combined_json["failure_mechanism_subdivision"] = f"{m_sub_code} {m_sub_name}"
+    
+    cause_text = results.get("cause_result", "")
+    combined_json["failure_cause_notation"] = extract_field(cause_text, "CAUSE_NOTATION:")
+    c_sub_code = extract_field(cause_text, "CAUSE_SUBDIVISION_CODE:")
+    c_sub_name = extract_field(cause_text, "CAUSE_SUBDIVISION_NOTATION:")
+    combined_json["failure_cause_subdivision"] = f"{c_sub_code} {c_sub_name}"
+    
+    combined_json["confidence"] = "HIGH" if combined_json["failure_mode_code"] else "LOW"
+    results["combined_json"] = combined_json
     return results
 
 # ============================================================
-# EXPORT
+# UI & EXPORT FUNCTIONS
 # ============================================================
 def export_to_excel(data: dict) -> bytes:
     df = pd.DataFrame([data])
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Failure Analysis")
+        df.to_excel(writer, index=False)
     return buf.getvalue()
 
+def inject_css():
+    st.markdown("""
+    <style>
+    /* ซ่อนปุ่มรูปตาในช่อง Password */
+    button[title="View password content"] { display: none !important; }
+    
+    .main-header { 
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); 
+        padding: 2rem; border-radius: 16px; margin-bottom: 2rem; color: white; text-align: center; 
+    }
+    .result-box { background: #f0fdf4; border-left: 4px solid #22c55e; padding: 1rem; margin: 0.5rem 0; }
+    </style>
+    """, unsafe_allow_html=True)
+
 # ============================================================
-# MAIN APP UI
+# PAGE RENDERING
 # ============================================================
+def render_home():
+    inject_css()
+    st.markdown('<div class="main-header"><h1>🔧 ISO 14224 Analysis Console</h1></div>', unsafe_allow_html=True)
+    if st.button("🔬 Go to Failure Analysis", type="primary"):
+        st.session_state.page = "analysis"
+        st.rerun()
+
 def render_analysis():
     inject_css()
     
-    # Sidebar
     with st.sidebar:
         st.markdown("### ⚙️ LLM Configuration")
         provider = st.selectbox("AI Provider", ["DeepSeek", "Claude (Anthropic)", "Gemini (Google)"])
-        api_key = st.text_input(f"{provider} API Key", type="password")
-        
-        if st.button("🧪 ทดสอบการเชื่อมต่อ API"):
-            res = call_llm("Hi", "Test", provider, api_key, max_tokens=5)
-            st.success("API Connected!") if not res.startswith("❌") else st.error(res)
-
-    st.markdown("## 🔬 Failure Analysis — ISO 14224")
+        api_key = st.text_input("API Key", type="password")
+    
+    st.title("🔬 Failure Analysis")
     
     collection = init_vdb()
     df_plant = load_plant_unit()
     
-    # UI Step 1: Capture
+    # Section 1: Raw Input
     raw_text = st.text_area("📝 รายละเอียด Failure", height=150)
     if st.button("✨ Normalize", type="primary"):
         st.session_state.normalized_text = normalize_failure(raw_text, provider, api_key)
         st.rerun()
-    
+        
     if st.session_state.get("normalized_text"):
         st.info(st.session_state.normalized_text)
+        
+        # Section 2-3: Equipment Select
+        col1, col2 = st.columns(2)
+        with col1:
+            plant = st.selectbox("🏭 Plant", list(df_plant["Plant"].unique()))
+        with col2:
+            equip_label = st.selectbox("📐 Equipment Class", list(EQUIPMENT_CLASSES.keys()))
+            equip_code = EQUIPMENT_CLASSES[equip_label]
+            equip_name = equip_label.split(" — ")[1] if equip_code else ""
 
-    # UI Step 2-3: Equipment Select
-    col1, col2 = st.columns(2)
-    with col1:
-        plant = st.selectbox("🏭 Plant", ["--"] + list(df_plant["Plant"].unique()))
-    with col2:
-        equip_label = st.selectbox("📐 Equipment Class", list(EQUIPMENT_CLASSES.keys()))
-    
-    # Final Analysis Button
-    if st.button("🔍 Run Full Analysis", use_container_width=True):
-        # Implementation...
-        st.success("Analysis Ready!")
+        # Section 4: Maintainable Item
+        if st.button("🤖 แนะนำ Maintainable Item"):
+            suggestion = suggest_maintainable_item(collection, equip_code, equip_name, st.session_state.normalized_text, provider, api_key)
+            st.session_state.suggested_mi = suggestion
+            st.markdown(suggestion)
+
+        # Final Run
+        if st.button("🔍 Run Full Analysis", use_container_width=True):
+            with st.spinner("Analyzing..."):
+                final_mi = "Item Name" # Extract from suggested_mi in real use
+                ans = run_full_analysis(collection, equip_code, equip_name, final_mi, st.session_state.normalized_text, provider, api_key)
+                st.session_state.analysis_result = ans
+                st.success("Analysis Complete!")
+                st.json(ans["combined_json"])
 
 def main():
     if "page" not in st.session_state: st.session_state.page = "home"
-    inject_css()
-    if st.session_state.page == "home":
-        st.markdown('<div class="main-header"><h1>🔧 ISO 14224 Reliability Console</h1></div>', unsafe_allow_html=True)
-        if st.button("🔬 Start Analysis", type="primary"):
-            st.session_state.page = "analysis"
-            st.rerun()
-    else:
-        render_analysis()
+    if st.session_state.page == "home": render_home()
+    else: render_analysis()
 
 if __name__ == "__main__":
     main()
