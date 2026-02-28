@@ -533,32 +533,32 @@ def render_analysis():
         st.markdown("## 🔬 Failure Analysis — ISO 14224")
     
     with st.sidebar:
-    st.markdown("### ⚙️ LLM Configuration")
-    provider = st.selectbox("AI Provider", ["Claude (Anthropic)", "Gemini (Google)", "DeepSeek"])
+        st.markdown("### ⚙️ LLM Configuration")
+        provider = st.selectbox("AI Provider", ["Claude (Anthropic)", "Gemini (Google)", "DeepSeek"])
     
-    # ดึงจาก Environment Variables
-    if provider == "Claude (Anthropic)":
-        default_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        api_key = st.text_input("Anthropic API Key", value=default_key, type="password")
-    elif provider == "Gemini (Google)":
-        default_key = os.environ.get("GEMINI_API_KEY", "")
-        api_key = st.text_input("Gemini API Key", value=default_key, type="password")
-    else:  # DeepSeek
-        default_key = os.environ.get("DEEPSEEK_API_KEY", "")
-        api_key = st.text_input("DeepSeek API Key", value=default_key, type="password")
+        # ดึงจาก Environment Variables
+        if provider == "Claude (Anthropic)":
+            default_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            api_key = st.text_input("Anthropic API Key", value=default_key, type="password")
+        elif provider == "Gemini (Google)":
+            default_key = os.environ.get("GEMINI_API_KEY", "")
+            api_key = st.text_input("Gemini API Key", value=default_key, type="password")
+        else:  # DeepSeek
+            default_key = os.environ.get("DEEPSEEK_API_KEY", "")
+            api_key = st.text_input("DeepSeek API Key", value=default_key, type="password")
         
-        # Test Connection Button
-        if api_key and st.button("🧪 ทดสอบการเชื่อมต่อ API"):
-            with st.spinner("กำลังทดสอบ..."):
-                test_result = call_llm(
-                    "You are a helpful assistant.",
-                    "Say 'OK' if you can read this.",
-                    provider, api_key, max_tokens=10
-                )
-                if test_result and not test_result.startswith("❌"):
-                    st.success(f"✅ API ทำงานปกติ: {test_result}")
-                else:
-                    st.error(f"❌ API Error: {test_result}")
+    # Test Connection Button
+    if api_key and st.button("🧪 ทดสอบการเชื่อมต่อ API"):
+        with st.spinner("กำลังทดสอบ..."):
+            test_result = call_llm(
+                "You are a helpful assistant.",
+                "Say 'OK' if you can read this.",
+                provider, api_key, max_tokens=10
+            )
+            if test_result and not test_result.startswith("❌"):
+                st.success(f"✅ API ทำงานปกติ: {test_result}")
+            else:
+                st.error(f"❌ API Error: {test_result}")
     
     # Initialize
     collection = init_vdb()
