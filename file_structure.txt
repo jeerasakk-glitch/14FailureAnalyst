@@ -1,0 +1,7 @@
+your-github-repo/
+├── 14224_failure_analysis.py    
+├── requirements.txt              
+├── Plant_Unit.xlsx               
+├── chroma_db/                    
+├── .gitignore                    
+└── README.md                     
