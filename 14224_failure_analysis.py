@@ -113,7 +113,7 @@ def load_plant_unit():
         st.error(f"❌ ไม่พบไฟล์ Plant_Unit.xlsx: {e}")
         return pd.DataFrame(columns=["Plant", "Unit", "Machinetype"])
 
-@st.cache_resource
+@st.cache_resource          # ✅ มีอยู่แล้วที่นี่
 def init_vdb():
     try:
         import chromadb
@@ -128,7 +128,6 @@ def init_vdb():
     except Exception as e:
         st.error(f"❌ VDB Error: {e}")
         return None
-
 # ============================================================
 # RAG SEARCH
 # ============================================================
