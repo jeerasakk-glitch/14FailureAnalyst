@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -123,8 +122,15 @@ def init_vdb():
         ef = embedding_functions.DefaultEmbeddingFunction()
         client = chromadb.PersistentClient(path=CONFIG["chroma_path"])
         
-        collections = client.list_collections()
-        collection_names = [col.name for col in collections]
+        # รองรับทั้ง ChromaDB เก่า (คืน object) และใหม่ (คืน string)
+        try:
+            raw_cols = client.list_collections()
+            if raw_cols and hasattr(raw_cols[0], "name"):
+                collection_names = [col.name for col in raw_cols]
+            else:
+                collection_names = [str(c) for c in raw_cols]
+        except Exception:
+            collection_names = []
         
         if CONFIG["collection_name"] not in collection_names:
             collection = client.create_collection(
@@ -137,7 +143,32 @@ def init_vdb():
                 embedding_function=ef,
             )
         return collection
+
     except Exception as e:
+        err_msg = str(e)
+        # ChromaDB schema เก่าไม่ตรงกับ version ใหม่ → fallback in-memory
+        if "no such column" in err_msg or "schema" in err_msg.lower():
+            try:
+                import chromadb
+                from chromadb.utils import embedding_functions
+                import shutil, os
+
+                # ลบ DB เก่าแล้วสร้างใหม่
+                db_path = CONFIG["chroma_path"]
+                if os.path.exists(db_path):
+                    shutil.rmtree(db_path)
+                    st.warning("⚠️ ChromaDB schema เก่า — ลบและสร้างใหม่อัตโนมัติ (กรุณา ingest ข้อมูลใหม่)")
+                
+                ef = embedding_functions.DefaultEmbeddingFunction()
+                client = chromadb.PersistentClient(path=db_path)
+                collection = client.create_collection(
+                    name=CONFIG["collection_name"],
+                    embedding_function=ef,
+                )
+                return collection
+            except Exception as e2:
+                st.error(f"❌ VDB Error (fallback): {e2}")
+                return None
         st.error(f"❌ VDB Error: {e}")
         return None
 
@@ -364,8 +395,11 @@ def export_to_excel(data: dict) -> bytes:
 def inject_css():
     st.markdown("""
     <style>
-    /* ซ่อนปุ่มรูปตาในช่อง Password */
+    /* ซ่อนปุ่มรูปตาในช่อง Password — รองรับทุก Streamlit version */
+    button[data-testid="passwordInputVisibilityToggle"] { display: none !important; }
+    [data-testid="stPasswordInput"] button { display: none !important; }
     button[title="View password content"] { display: none !important; }
+    button[aria-label*="password" i] { display: none !important; }
     
     .main-header { 
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); 
@@ -432,6 +466,7 @@ def render_analysis():
                 st.json(ans["combined_json"])
 
 def main():
+    inject_css()  # ← inject CSS ทันที ก่อน sidebar render
     if "page" not in st.session_state: st.session_state.page = "home"
     if st.session_state.page == "home": render_home()
     else: render_analysis()
