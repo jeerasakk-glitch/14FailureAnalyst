@@ -532,23 +532,20 @@ def render_analysis():
     with col_title:
         st.markdown("## 🔬 Failure Analysis — ISO 14224")
     
-    # Sidebar
     with st.sidebar:
-        st.markdown("### ⚙️ LLM Configuration")
-        provider = st.selectbox("AI Provider", ["Claude (Anthropic)", "Gemini (Google)", "DeepSeek"])
-        
-        if provider == "DeepSeek":
-            api_key = st.text_input("DeepSeek API Key", 
-                                   value=st.secrets.get("deepseek", {}).get("api_key", ""),
-                                   type="password")
-        elif provider == "Claude (Anthropic)":
-            api_key = st.text_input("Anthropic API Key",
-                                   value=st.secrets.get("anthropic", {}).get("api_key", ""),
-                                   type="password")
-        else:
-            api_key = st.text_input("Gemini API Key",
-                                   value=st.secrets.get("gemini", {}).get("api_key", ""),
-                                   type="password")
+    st.markdown("### ⚙️ LLM Configuration")
+    provider = st.selectbox("AI Provider", ["Claude (Anthropic)", "Gemini (Google)", "DeepSeek"])
+    
+    # ดึงจาก Environment Variables
+    if provider == "Claude (Anthropic)":
+        default_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        api_key = st.text_input("Anthropic API Key", value=default_key, type="password")
+    elif provider == "Gemini (Google)":
+        default_key = os.environ.get("GEMINI_API_KEY", "")
+        api_key = st.text_input("Gemini API Key", value=default_key, type="password")
+    else:  # DeepSeek
+        default_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        api_key = st.text_input("DeepSeek API Key", value=default_key, type="password")
         
         # Test Connection Button
         if api_key and st.button("🧪 ทดสอบการเชื่อมต่อ API"):
