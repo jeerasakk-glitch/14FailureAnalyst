@@ -537,12 +537,6 @@ def render_analysis():
         st.markdown("### ⚙️ LLM Configuration")
         provider = st.selectbox("AI Provider", ["Claude (Anthropic)", "Gemini (Google)", "DeepSeek"])
         
-        if provider == "Claude (Anthropic)":
-            api_key = st.text_input("Anthropic API Key", type="password")
-        elif provider == "Gemini (Google)":
-            api_key = st.text_input("Gemini API Key", type="password")
-        else:
-            # พยายามดึงจาก Secrets ก่อน ถ้าไม่มีค่อยให้กรอกเอง
         if provider == "DeepSeek":
             api_key = st.text_input("DeepSeek API Key", 
                                    value=st.secrets.get("deepseek", {}).get("api_key", ""),
