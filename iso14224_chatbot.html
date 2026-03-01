@@ -957,8 +957,37 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .cc-score {
   font-family: var(--mono);
   font-size: 9px;
-  color: var(--gold);
+  font-weight: 600;
   flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.cc-score.score-high  { color: #4ade80; background: rgba(74,222,128,0.1); }
+.cc-score.score-mid   { color: var(--gold); background: rgba(234,179,8,0.1); }
+.cc-score.score-low   { color: #f87171; background: rgba(248,113,113,0.1); }
+
+.vdb-query-bar {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  margin-top: 2px;
+  padding: 3px 6px;
+  background: var(--surface2);
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.score-summary {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Typing indicator */
@@ -1795,19 +1824,39 @@ function appendMessage(role, content, provider, cfg, contexts, isError = false) 
   // Context sources
   let contextHtml = '';
   if (contexts && contexts.length > 0) {
-    const cards = contexts.slice(0, 4).map(c => `
+    // คำนวณ avg score และ color coding
+    const scoreClass = s => s >= 0.5 ? 'score-high' : s >= 0.35 ? 'score-mid' : 'score-low';
+    const scoreIcon  = s => s >= 0.5 ? '🟢' : s >= 0.35 ? '🟡' : '🔴';
+    const numScores  = contexts.filter(c => typeof c.score === 'number');
+    const avgScore   = numScores.length
+      ? (numScores.reduce((a,c) => a + c.score, 0) / numScores.length).toFixed(3)
+      : '-';
+
+    const cards = contexts.slice(0, 4).map((c, i) => {
+      const score     = typeof c.score === 'number' ? c.score : 0;
+      const scoreDisp = typeof c.score === 'number' ? c.score.toFixed(3) : c.score;
+      const chunkType = c.meta.chunk_type || c.meta.content_type || c.meta.page_type || 'section';
+      return `
       <div class="context-card">
-        <span class="cc-icon">📄</span>
+        <span class="cc-icon">${scoreIcon(score)}</span>
         <div class="cc-text">
           <div class="cc-title">${escHtml(c.meta.title || 'ISO 14224')}</div>
-          <div class="cc-meta">p.${c.meta.page_number || '?'} · ${c.meta.content_type || 'section'}</div>
+          <div class="cc-meta">p.${c.meta.page_number || '?'} · ${chunkType}</div>
         </div>
-        <span class="cc-score">${c.score}</span>
-      </div>`).join('');
+        <span class="cc-score ${scoreClass(score)}">${scoreDisp}</span>
+      </div>`;
+    }).join('');
+
+    const vdbBar = result.vdb_query
+      ? `<div class="vdb-query-bar">🔍 query: ${escHtml(result.vdb_query)}</div>` : '';
 
     contextHtml = `
       <div class="msg-context">
-        <span class="context-label">Retrieved Sources (${contexts.length})</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="context-label">Retrieved Sources (${contexts.length})</span>
+          <span class="score-summary">avg ${avgScore}</span>
+        </div>
+        ${vdbBar}
         <div class="context-cards">${cards}</div>
       </div>`;
   }
