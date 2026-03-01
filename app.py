@@ -57,12 +57,24 @@ def init_collection():
             return client.create_collection(name=COLLECTION_NAME, embedding_function=ef)
         raise
 
-collection = init_collection()
+# collection จะถูก init ใน lifespan หลัง server ขึ้น
+collection = None
 
 # ============================================================
-# FASTAPI APP
+# FASTAPI APP — ใช้ lifespan เพื่อให้ server ขึ้นก่อน แล้วค่อย load VDB
 # ============================================================
-app = FastAPI(title="ISO 14224 RAG API")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    global collection
+    import asyncio, concurrent.futures
+    loop = asyncio.get_event_loop()
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        collection = await loop.run_in_executor(pool, init_collection)
+    yield
+
+app = FastAPI(title="ISO 14224 RAG API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -100,6 +112,8 @@ def get_api_key(provider: str) -> str:
         raise HTTPException(500, f"API key not configured on server. Set environment variable: {env_var}")
     return key
 def rag_search(query: str, n: int = 15) -> list[dict]:
+    if collection is None:
+        return [{"text": "[VDB initializing, please retry in a moment]", "meta": {}, "score": None}]
     try:
         results = collection.query(query_texts=[query], n_results=n)
         docs   = results["documents"][0]
